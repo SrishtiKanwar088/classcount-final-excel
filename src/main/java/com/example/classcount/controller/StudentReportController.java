@@ -25,25 +25,27 @@ public class StudentReportController {
     private final AttendanceRepository attendanceRepository;
     private final SubjectRepository subjectRepository;
 
-    public StudentReportController(StudentRepository studentRepository, AttendanceRepository attendanceRepository, SubjectRepository subjectRepository) {
+    public StudentReportController(StudentRepository studentRepository,
+                                   AttendanceRepository attendanceRepository,
+                                   SubjectRepository subjectRepository) {
         this.studentRepository = studentRepository;
         this.attendanceRepository = attendanceRepository;
         this.subjectRepository = subjectRepository;
     }
 
-    // URL includes section
-    @GetMapping("/{year}/{section}/{rollNumber}")
+    // ✅ FIXED: Removed 'section' from the URL mapping
+    @GetMapping("/{year}/{rollNumber}")
     public String viewIndividualReport(@PathVariable("year") String year,
-                                       @PathVariable("section") String section,
                                        @PathVariable("rollNumber") String rollNumber,
                                        Model model,
                                        RedirectAttributes redirectAttributes) {
 
-        // CRITICAL FIX: Calling the correct repository method with three arguments: rollNumber, year, and section.
+        // Try to find the student by roll number and year
         Optional<Student> studentOptional = studentRepository.findByRollNumberAndClassroom_Year(rollNumber, year);
 
         if (studentOptional.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error: Student with Roll Number " + rollNumber + " not found in " + year + " - Section " + section + ".");
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Error: Student with Roll Number " + rollNumber + " not found in " + year + ".");
             return "redirect:/welcome";
         }
 
@@ -55,28 +57,21 @@ public class StudentReportController {
         int overallTotal = 0;
 
         for (Subject subject : subjects) {
-            long presentCount = attendanceRepository.findByStudentAndSubject(student, subject).stream()
-                    .filter(a -> a.isPresent())
-                    .count();
+            long presentCount = attendanceRepository.findByStudentAndSubject(student, subject)
+                    .stream().filter(a -> a.isPresent()).count();
+            long total = attendanceRepository.findByStudentAndSubject(student, subject).size();
 
-            long totalAttendanceRecords = attendanceRepository.findByStudentAndSubject(student, subject).size();
-
-            String formattedAttendance = presentCount + "/" + totalAttendanceRecords;
+            subjectAttendanceSummary.put(subject.getName(), presentCount + "/" + total);
             overallPresent += presentCount;
-            overallTotal += totalAttendanceRecords;
-
-            subjectAttendanceSummary.put(subject.getName(), formattedAttendance);
+            overallTotal += total;
         }
 
-        String overallPercentage = "0.00%";
-        if (overallTotal > 0) {
-            double percentage = (double) overallPresent / overallTotal * 100;
-            overallPercentage = String.format("%.2f", percentage) + "%";
-        }
+        String overallPercentage = overallTotal > 0
+                ? String.format("%.2f%%", (double) overallPresent / overallTotal * 100)
+                : "0.00%";
 
         model.addAttribute("student", student);
         model.addAttribute("currentYear", year);
-        model.addAttribute("currentSection", section);
         model.addAttribute("subjects", subjects);
         model.addAttribute("subjectAttendanceSummary", subjectAttendanceSummary);
         model.addAttribute("overallPercentage", overallPercentage);

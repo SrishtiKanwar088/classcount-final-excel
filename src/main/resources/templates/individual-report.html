@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="'Report: ' + ${student.name}"></title>
+
+    <!-- Bootstrap & Fonts -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
         body {
+            overflow:scroll;
             font-family: 'Poppins', sans-serif;
             margin: 0;
             padding: 0;
@@ -16,13 +19,16 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            color: #fff;
             background-color: #15293d;
+            color: #fff;
             overflow: hidden;
             position: relative;
         }
 
-        .container { z-index: 10; }
+        .container {
+            z-index: 10;
+            padding: 20px;
+        }
 
         .dashboard-card {
             background: rgba(255, 255, 255, 0.1);
@@ -45,76 +51,111 @@
             margin-bottom: 2rem;
         }
 
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #ff8c00, 0 0 20px #ff0080; }
+            to { text-shadow: 0 0 20px #ff0080, 0 0 30px #ff8c00; }
+        }
+
         h4 {
             color: #fff;
             text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
         }
 
-        /* TABLE STYLES */
-      table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-  color: #ffffff; /* Bright white text */
-  font-size: 1rem;
-}
+        /* ---------- TABLE STYLES ---------- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            color: #ffffff;
+            font-size: 1rem;
+        }
 
-th, td {
-  padding: 12px 15px;
-  text-align: left;
-  /* Use a strong border for separation */
-  border: 1px solid #444444;
-  /* Set a uniform, visible background for ALL cells, making all rows stand out */
-  background-color: rgba(255, 255, 255, 0.15); /* This color should make all rows visible */
-}
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid #444;
+            background-color: rgba(255, 255, 255, 0.15);
+        }
 
-/* Header row styling: Give it a slightly different background */
-th {
-  background-color: rgba(255, 255, 255, 0.25);
-  font-weight: 600;
-}
+        th {
+            background-color: rgba(255, 255, 255, 0.25);
+            font-weight: 600;
+            color: #ff8c00;
+            text-transform: uppercase;
+        }
 
-/* IMPORTANT: Remove or override any alternating row colors (zebra striping)
-   that might be making some rows invisible/transparent. */
-tr td {
-  background-color: rgba(255, 255, 255, 0.15) !important; /* Force all rows to use the same background */
-}
+        tr td {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+        }
 
-/* Percentage or important cell highlight (like the overall percentage row) */
-/* The row containing the OVERALL PERCENTAGE text is typically the last row in the body */
-tr:last-child td {
-  background-color: rgba(255, 255, 255, 0.1); /* You might want this summary row slightly different */
-  font-weight: 700;
-}
+        tr:last-child td {
+            background-color: rgba(255, 255, 255, 0.1);
+            font-weight: 700;
+        }
 
-td:last-child {
-  font-weight: 700;
-  color: #ffae42; /* Gold/orange contrast */
-}
+        td:last-child {
+            font-weight: 700;
+            color: #ffae42;
+        }
 
-/* Optional subtle text glow for clarity */
-td, th {
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-}
-        /* Buttons */
+        td, th {
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ---------- BUTTONS ---------- */
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 25px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* ---------- ERROR BOX ---------- */
+        .alert {
+            background-color: rgba(255, 0, 0, 0.15);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #ff4c4c;
+            border-radius: 8px;
+        }
+
+        /* ---------- QUICK LOOKUP FORM ---------- */
+        .quick-lookup {
+            margin-top: 2rem;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .quick-lookup input {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+        }
+
+        .quick-lookup input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-submit {
+            background: linear-gradient(90deg, #ff8c00, #ff0080);
+            border: none;
+            color: #fff;
+            font-weight: 600;
             border-radius: 8px;
             padding: 10px 20px;
             transition: all 0.3s ease;
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+        .btn-submit:hover {
+            opacity: 0.9;
             transform: translateY(-2px);
-        }
-
-        /* Glow animation */
-        @keyframes glow {
-            from { text-shadow: 0 0 10px #ff8c00, 0 0 20px #ff0080; }
-            to { text-shadow: 0 0 20px #ff0080, 0 0 30px #ff8c00; }
         }
     </style>
 </head>
@@ -131,29 +172,35 @@ td, th {
         </div>
 
         <div class="table-responsive">
-            <table class="table table-striped table-bordered table-hover">
+            <table class="table">
                 <thead>
                 <tr>
-                    <th style="color: #ff8c00;">Subject</th>
-                    <th style="color: #ff8c00;">Attendance (P/T)</th>
+                    <th>Subject</th>
+                    <th>Attendance (P/T)</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="entry : ${subjectAttendanceSummary}">
-                    <td th:utext="${entry.key}" style="color: #fff !important;"></td>
-                    <td th:utext="${entry.value}" style="color: #fff !important;"></td>
+                    <td th:text="${entry.key}"></td>
+                    <td th:text="${entry.value}"></td>
                 </tr>
                 </tbody>
                 <tfoot>
-                <tr style="font-weight: bold; background-color: rgba(255, 140, 0, 0.1);">
-                    <td style="color: #fff;">OVERALL PERCENTAGE</td>
-                    <td th:text="${overallPercentage}" style="color: #ff8c00 !important;"></td>
+                <tr>
+                    <td>OVERALL PERCENTAGE</td>
+                    <td th:text="${overallPercentage}"></td>
                 </tr>
                 </tfoot>
             </table>
         </div>
 
-        <a th:href="@{/welcome}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+        <div class="d-flex justify-content-between mt-4">
+            <a th:href="@{/welcome}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+
+
+            </form>
+        </div>
     </div>
 </div>
 </body>
