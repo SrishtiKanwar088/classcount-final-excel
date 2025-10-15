@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Report: ' + ${student.name}"></title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            background-color: #15293d;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container { z-index: 10; }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 30px;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .app-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #ff8c00, #ff0080);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s infinite alternate;
+            margin-bottom: 2rem;
+        }
+
+        h4 {
+            color: #fff;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* TABLE STYLES */
+      table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  color: #ffffff; /* Bright white text */
+  font-size: 1rem;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  /* Use a strong border for separation */
+  border: 1px solid #444444;
+  /* Set a uniform, visible background for ALL cells, making all rows stand out */
+  background-color: rgba(255, 255, 255, 0.15); /* This color should make all rows visible */
+}
+
+/* Header row styling: Give it a slightly different background */
+th {
+  background-color: rgba(255, 255, 255, 0.25);
+  font-weight: 600;
+}
+
+/* IMPORTANT: Remove or override any alternating row colors (zebra striping)
+   that might be making some rows invisible/transparent. */
+tr td {
+  background-color: rgba(255, 255, 255, 0.15) !important; /* Force all rows to use the same background */
+}
+
+/* Percentage or important cell highlight (like the overall percentage row) */
+/* The row containing the OVERALL PERCENTAGE text is typically the last row in the body */
+tr:last-child td {
+  background-color: rgba(255, 255, 255, 0.1); /* You might want this summary row slightly different */
+  font-weight: 700;
+}
+
+td:last-child {
+  font-weight: 700;
+  color: #ffae42; /* Gold/orange contrast */
+}
+
+/* Optional subtle text glow for clarity */
+td, th {
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+}
+        /* Buttons */
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Glow animation */
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #ff8c00, 0 0 20px #ff0080; }
+            to { text-shadow: 0 0 20px #ff0080, 0 0 30px #ff8c00; }
+        }
+    </style>
+</head>
+<body>
+<div class="container d-flex flex-column align-items-center justify-content-center">
+    <div class="dashboard-card">
+        <h1 class="app-title">Student Attendance Report</h1>
+
+        <h4 th:text="${student.name} + ' (' + ${student.rollNumber} + ')'" class="mb-2"></h4>
+        <p class="text-white-50 mb-4" th:text="${currentYear} + ' Academic Year'"></p>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th style="color: #ff8c00;">Subject</th>
+                    <th style="color: #ff8c00;">Attendance (P/T)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="entry : ${subjectAttendanceSummary}">
+                    <td th:utext="${entry.key}" style="color: #fff !important;"></td>
+                    <td th:utext="${entry.value}" style="color: #fff !important;"></td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr style="font-weight: bold; background-color: rgba(255, 140, 0, 0.1);">
+                    <td style="color: #fff;">OVERALL PERCENTAGE</td>
+                    <td th:text="${overallPercentage}" style="color: #ff8c00 !important;"></td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <a th:href="@{/welcome}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+    </div>
+</div>
+</body>
+</html>
