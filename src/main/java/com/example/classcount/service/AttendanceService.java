@@ -11,44 +11,44 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class AttendanceService {
 
     private final StudentRepository studentRepository;
-    private  SubjectRepository subjectRepository;
-    private  AttendanceRepository attendanceRepository;
+    private final SubjectRepository subjectRepository;
+    private final AttendanceRepository attendanceRepository;
 
-    public AttendanceService(StudentRepository studentRepository, SubjectRepository subjectRepository, AttendanceRepository attendanceRepository) {
+    // ✅ FIXED: Proper constructor injection for all three repositories
+    public AttendanceService(StudentRepository studentRepository,
+                             SubjectRepository subjectRepository,
+                             AttendanceRepository attendanceRepository) {
         this.studentRepository = studentRepository;
+        this.subjectRepository = subjectRepository;
+        this.attendanceRepository = attendanceRepository;
     }
 
     /**
-     * Retrieves and calculates the attendance summary for a specific academic year and section.
+     * Retrieves and calculates the attendance summary for a specific academic year.
      */
-    // CRITICAL FIX: The method MUST accept the 'section' variable to resolve the compilation error
-    public Map<String, Object> getAttendanceSummaryForYear(String year, String section) {
-        // NOTE: The repository calls below should be updated to a non-section specific method for now,
-        // but we'll use the current logic to avoid further cascading errors until we confirm the repository state.
-
-        // Fetch students by both Year AND Section (Assuming a generic year-only retrieval for simplicity after reset)
+    public Map<String, Object> getAttendanceSummaryForYear(String year) {
+        // Fetch students belonging to the given year
         List<Student> students = studentRepository.findByClassroom_Year(year);
 
-        // Fetch all subjects for the entire year
+        // Fetch subjects taught in that year
         List<Subject> subjects = subjectRepository.findByClassroom_Year(year);
 
-        // Fetch all attendance records and filter them down to the relevant students
-        List<Attendance> allAttendance = attendanceRepository.findAll();
-        List<Attendance> attendanceForYear = allAttendance.stream()
-                // CRITICAL FIX: The filter expression uses 'section' and 'year' but assumes findByClassroom_Year() was called correctly
+        // Fetch all attendance records and filter those relevant to the year
+        List<Attendance> attendanceForYear = attendanceRepository.findAll().stream()
                 .filter(a -> a.getStudent().getClassroom().getYear().equals(year))
                 .collect(Collectors.toList());
 
-        Map<Long, Map<Long, String>> studentSubjectAttendance = new HashMap<>(); // <studentId, <subjectId, "P/T">>
-        Map<Long, String> studentOverallAttendance = new HashMap<>(); // <studentId, "P/T">
+        // Maps to hold calculated data
+        Map<Long, Map<Long, String>> studentSubjectAttendance = new HashMap<>();
+        Map<Long, String> studentOverallAttendance = new HashMap<>();
 
+        // Loop through each student to calculate attendance
         for (Student student : students) {
             Map<Long, Integer> presentCount = new HashMap<>();
             Map<Long, Integer> totalCount = new HashMap<>();
@@ -67,7 +67,7 @@ public class AttendanceService {
                 }
             }
 
-            // Format data for the view
+            // Format per-subject attendance
             Map<Long, String> subjectAttendance = new HashMap<>();
             for (Subject subject : subjects) {
                 int p = presentCount.getOrDefault(subject.getId(), 0);
@@ -76,6 +76,7 @@ public class AttendanceService {
             }
             studentSubjectAttendance.put(student.getId(), subjectAttendance);
 
+            // Format overall attendance
             String overallFormatted = overallPresent + "/" + overallTotal;
             if (overallTotal > 0) {
                 double percentage = (double) overallPresent / overallTotal * 100;
@@ -86,6 +87,7 @@ public class AttendanceService {
             studentOverallAttendance.put(student.getId(), overallFormatted);
         }
 
+        // Prepare the final summary map
         Map<String, Object> summary = new HashMap<>();
         summary.put("students", students);
         summary.put("subjects", subjects);

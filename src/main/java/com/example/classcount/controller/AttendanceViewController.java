@@ -40,64 +40,63 @@ public class AttendanceViewController {
         this.attendanceService = attendanceService;
     }
 
-    // URL includes section
-    @GetMapping("/{year}/{section}")
-    public String viewAttendance(@PathVariable("year") String year, @PathVariable("section") String section, Model model) {
-        // CRITICAL FIX: Pass both year AND section to the service method
-        Map<String, Object> summary = attendanceService.getAttendanceSummaryForYear(year, section);
+    // MODIFIED: URL only uses {year}
+    @GetMapping("/{year}")
+    public String viewAttendance(@PathVariable("year") String year, Model model) {
+        // CRITICAL FIX: Service call must only pass 'year'
+        Map<String, Object> summary = attendanceService.getAttendanceSummaryForYear(year);
 
-        // Fetch students only for the current section (used to populate the table rows)
-        List<Student> studentsInYearSection = studentRepository.findByClassroom_Year(year);
+        // Fetch students by year only
+        List<Student> studentsInYear = studentRepository.findByClassroom_Year(year);
 
         model.addAllAttributes(summary);
-        // Override 'students' in the model with the filtered list
-        model.addAttribute("students", studentsInYearSection);
+        model.addAttribute("students", studentsInYear);
         model.addAttribute("currentYear", year);
-        model.addAttribute("currentSection", section);
 
         return "attendance-view";
     }
 
-    // URL includes section for deletion scope
-    @PostMapping("/reset/{year}/{section}")
-    public String resetAttendance(@PathVariable("year") String year, @PathVariable("section") String section, RedirectAttributes redirectAttributes) {
+    // MODIFIED: URL only uses {year} for deletion scope
+    @PostMapping("/reset/{year}")
+    public String resetAttendance(@PathVariable("year") String year, RedirectAttributes redirectAttributes) {
         try {
-            // CRITICAL FIX: Fetch students only for the specific year AND section
-            List<Student> studentsInYearSection = studentRepository.findByClassroom_Year(year);
+            // Fetch students only for the specific year
+            List<Student> studentsInYear = studentRepository.findByClassroom_Year(year);
 
-            List<Long> studentIds = studentsInYearSection.stream().map(Student::getId).collect(Collectors.toList());
+            List<Long> studentIds = studentsInYear.stream().map(Student::getId).collect(Collectors.toList());
 
             if (studentIds.isEmpty()) {
-                redirectAttributes.addFlashAttribute("errorMessage", "No students found in " + year + " - Section " + section + " to reset records.");
-                return "redirect:/attendance/view/" + year + "/" + section;
+                redirectAttributes.addFlashAttribute("errorMessage", "No students found in " + year + " to reset records.");
+                return "redirect:/attendance/view/" + year;
             }
 
             // Execute batch deletion
             int deletedCount = attendanceRepository.deleteByStudentIdIn(studentIds);
 
-            redirectAttributes.addFlashAttribute("successMessage", deletedCount + " attendance records deleted. Attendance is now reset for " + year + " - Section " + section + "!");
+            redirectAttributes.addFlashAttribute("successMessage", deletedCount + " attendance records deleted. Attendance is now reset for " + year + "!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error resetting attendance: " + e.getMessage());
         }
 
-        // Redirect back to the correct section report page
-        return "redirect:/attendance/view/" + year + "/" + section;
+        // Redirect back to the correct report page
+        return "redirect:/attendance/view/" + year;
     }
 
 
-    // URL includes section for export
-    @GetMapping("/export/{year}/{section}")
-    public void exportAttendance(@PathVariable("year") String year, @PathVariable("section") String section, HttpServletResponse response) throws IOException {
+    // MODIFIED: URL only uses {year} for export
+    @GetMapping("/export/{year}")
+    public void exportAttendance(@PathVariable("year") String year, HttpServletResponse response) throws IOException {
         response.setContentType("application/vnd.ms-excel");
         String headerKey = "Content-Disposition";
-        String headerValue = "attachment; filename=Attendance_" + year.replace(" ", "_") + "_" + section + ".xlsx";
+        // File name simplified
+        String headerValue = "attachment; filename=Attendance_" + year.replace(" ", "_") + ".xlsx";
         response.setHeader(headerKey, headerValue);
 
-        // CRITICAL FIX: Fetch students only for the specific year AND section
+        // Fetch students only for the specific year
         List<Student> students = studentRepository.findByClassroom_Year(year);
         List<Subject> subjects = subjectRepository.findByClassroom_Year(year);
 
-        // Filter attendance records to match only the students in the selected section
+        // Filter attendance records to match only the students in the selected year
         List<Long> studentIds = students.stream().map(Student::getId).collect(Collectors.toList());
 
         List<Attendance> allAttendance = attendanceRepository.findAll().stream()
