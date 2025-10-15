@@ -14,11 +14,14 @@ import java.util.List;
 
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
+
     List<Attendance> findBySubjectAndDate(Subject subject, LocalDate date);
     List<Attendance> findByStudentAndSubject(Student student, Subject subject);
     List<Attendance> findBySubject(Subject subject);
 
-    // NEW METHOD: Deletes all attendance records associated with a list of student IDs
+    /**
+     * CRITICAL: Deletes all attendance records associated with a list of student IDs.
+     */
     @Transactional
     @Modifying
     @Query("DELETE FROM Attendance a WHERE a.student.id IN :studentIds")

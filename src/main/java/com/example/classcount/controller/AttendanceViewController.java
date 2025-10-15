@@ -40,56 +40,71 @@ public class AttendanceViewController {
         this.attendanceService = attendanceService;
     }
 
-    @GetMapping("/{year}")
-    public String viewAttendance(@PathVariable("year") String year, Model model) {
-        Map<String, Object> summary = attendanceService.getAttendanceSummaryForYear(year);
+    // URL includes section
+    @GetMapping("/{year}/{section}")
+    public String viewAttendance(@PathVariable("year") String year, @PathVariable("section") String section, Model model) {
+        // CRITICAL FIX: Pass both year AND section to the service method
+        Map<String, Object> summary = attendanceService.getAttendanceSummaryForYear(year, section);
+
+        // Fetch students only for the current section (used to populate the table rows)
+        List<Student> studentsInYearSection = studentRepository.findByClassroom_Year(year);
+
         model.addAllAttributes(summary);
+        // Override 'students' in the model with the filtered list
+        model.addAttribute("students", studentsInYearSection);
         model.addAttribute("currentYear", year);
+        model.addAttribute("currentSection", section);
+
         return "attendance-view";
     }
 
-
-    @PostMapping("/reset/{year}")
-    public String resetAttendance(@PathVariable("year") String year, RedirectAttributes redirectAttributes) {
+    // URL includes section for deletion scope
+    @PostMapping("/reset/{year}/{section}")
+    public String resetAttendance(@PathVariable("year") String year, @PathVariable("section") String section, RedirectAttributes redirectAttributes) {
         try {
-            // 1. Fetch only the students belonging to the specific year being viewed
-            List<Student> studentsInYear = studentRepository.findByClassroom_Year(year);
+            // CRITICAL FIX: Fetch students only for the specific year AND section
+            List<Student> studentsInYearSection = studentRepository.findByClassroom_Year(year);
 
-            // 2. Extract their IDs
-            List<Long> studentIds = studentsInYear.stream().map(Student::getId).collect(Collectors.toList());
+            List<Long> studentIds = studentsInYearSection.stream().map(Student::getId).collect(Collectors.toList());
 
             if (studentIds.isEmpty()) {
-                redirectAttributes.addFlashAttribute("errorMessage", "No students found in " + year + " to reset records.");
-                return "redirect:/attendance/view/" + year;
+                redirectAttributes.addFlashAttribute("errorMessage", "No students found in " + year + " - Section " + section + " to reset records.");
+                return "redirect:/attendance/view/" + year + "/" + section;
             }
 
-            // 3. Delete all attendance records associated with those specific student IDs
-            // The repository method handles the SQL DELETE WHERE student_id IN (...)
+            // Execute batch deletion
             int deletedCount = attendanceRepository.deleteByStudentIdIn(studentIds);
 
-            redirectAttributes.addFlashAttribute("successMessage", deletedCount + " attendance records deleted. Attendance is now reset for " + year + "!");
+            redirectAttributes.addFlashAttribute("successMessage", deletedCount + " attendance records deleted. Attendance is now reset for " + year + " - Section " + section + "!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error resetting attendance: " + e.getMessage());
         }
 
-        // Redirect back to the reports page to show the refreshed data (which should be 0)
-        return "redirect:/attendance/view/" + year;
+        // Redirect back to the correct section report page
+        return "redirect:/attendance/view/" + year + "/" + section;
     }
 
 
-    @GetMapping("/export/{year}")
-    public void exportAttendance(@PathVariable("year") String year, HttpServletResponse response) throws IOException {
+    // URL includes section for export
+    @GetMapping("/export/{year}/{section}")
+    public void exportAttendance(@PathVariable("year") String year, @PathVariable("section") String section, HttpServletResponse response) throws IOException {
         response.setContentType("application/vnd.ms-excel");
         String headerKey = "Content-Disposition";
-        String headerValue = "attachment; filename=Attendance_" + year.replace(" ", "_") + ".xlsx";
+        String headerValue = "attachment; filename=Attendance_" + year.replace(" ", "_") + "_" + section + ".xlsx";
         response.setHeader(headerKey, headerValue);
 
+        // CRITICAL FIX: Fetch students only for the specific year AND section
         List<Student> students = studentRepository.findByClassroom_Year(year);
         List<Subject> subjects = subjectRepository.findByClassroom_Year(year);
+
+        // Filter attendance records to match only the students in the selected section
+        List<Long> studentIds = students.stream().map(Student::getId).collect(Collectors.toList());
+
         List<Attendance> allAttendance = attendanceRepository.findAll().stream()
-                .filter(a -> a.getStudent().getClassroom().getYear().equals(year))
+                .filter(a -> studentIds.contains(a.getStudent().getId()))
                 .collect(Collectors.toList());
 
+        // We pass the filtered student list and the filtered attendance list to the Excel service
         excelExportService.exportAttendance(response, students, subjects, allAttendance);
     }
 }

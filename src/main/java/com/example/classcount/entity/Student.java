@@ -19,8 +19,7 @@ public class Student {
     @Column(nullable = false, unique = true)
     private String rollNumber;
 
-    @Column(nullable = false)
-    private String section;
+    // NOTE: The 'section' field has been REMOVED.
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_id", nullable = false)

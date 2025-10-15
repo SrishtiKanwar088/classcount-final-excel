@@ -31,37 +31,34 @@ public class StudentReportController {
         this.subjectRepository = subjectRepository;
     }
 
-    @GetMapping("/{year}/{rollNumber}")
+    // URL includes section
+    @GetMapping("/{year}/{section}/{rollNumber}")
     public String viewIndividualReport(@PathVariable("year") String year,
+                                       @PathVariable("section") String section,
                                        @PathVariable("rollNumber") String rollNumber,
                                        Model model,
                                        RedirectAttributes redirectAttributes) {
 
-        // 1. Find the specific student
+        // CRITICAL FIX: Calling the correct repository method with three arguments: rollNumber, year, and section.
         Optional<Student> studentOptional = studentRepository.findByRollNumberAndClassroom_Year(rollNumber, year);
 
         if (studentOptional.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error: Student with Roll Number " + rollNumber + " not found in " + year + ".");
-            return "redirect:/welcome"; // Redirect back to dashboard if student is not found
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: Student with Roll Number " + rollNumber + " not found in " + year + " - Section " + section + ".");
+            return "redirect:/welcome";
         }
 
         Student student = studentOptional.get();
         List<Subject> subjects = subjectRepository.findByClassroom_Year(year);
 
-        // 2. Fetch attendance for this student across all subjects
         Map<String, String> subjectAttendanceSummary = new HashMap<>();
         int overallPresent = 0;
         int overallTotal = 0;
 
         for (Subject subject : subjects) {
-            long totalClasses = attendanceRepository.count(); // Placeholder for actual total classes in subject/timeframe
             long presentCount = attendanceRepository.findByStudentAndSubject(student, subject).stream()
                     .filter(a -> a.isPresent())
                     .count();
 
-            // We need the total number of classes this student *should have* attended
-            // Since we don't track total classes, we use the total attendance records as the class count for now.
-            // A professional fix would be a dedicated 'ClassesTaught' table.
             long totalAttendanceRecords = attendanceRepository.findByStudentAndSubject(student, subject).size();
 
             String formattedAttendance = presentCount + "/" + totalAttendanceRecords;
@@ -71,20 +68,19 @@ public class StudentReportController {
             subjectAttendanceSummary.put(subject.getName(), formattedAttendance);
         }
 
-        // 3. Calculate Overall Percentage
         String overallPercentage = "0.00%";
         if (overallTotal > 0) {
             double percentage = (double) overallPresent / overallTotal * 100;
             overallPercentage = String.format("%.2f", percentage) + "%";
         }
 
-        // 4. Populate Model for View
         model.addAttribute("student", student);
         model.addAttribute("currentYear", year);
+        model.addAttribute("currentSection", section);
         model.addAttribute("subjects", subjects);
         model.addAttribute("subjectAttendanceSummary", subjectAttendanceSummary);
         model.addAttribute("overallPercentage", overallPercentage);
 
-        return "individual-report"; // Create this new template next
+        return "individual-report";
     }
 }

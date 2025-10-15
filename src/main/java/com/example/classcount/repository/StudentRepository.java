@@ -10,11 +10,9 @@ import java.util.Optional;
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
+    // REVERTED: Finds all students belonging to a specific Classroom Year.
     List<Student> findByClassroom_Year(String year);
 
-    // NEW METHOD: Find a specific student by Roll Number within a Classroom
+    // REVERTED: Finds a specific student by Roll Number and Year.
     Optional<Student> findByRollNumberAndClassroom_Year(String rollNumber, String year);
-
-    Optional<Student> findByRollNumber(String rollNumber);
-
 }

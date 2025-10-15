@@ -62,23 +62,7 @@ public class DataLoader implements CommandLineRunner {
                 classroomRepository.save(c4);
             }
 
-            // Create sample students if not exists
-            if (studentRepository.findByClassroom_Year("3rd Year").isEmpty()) {
-                Classroom c3 = classroomRepository.findByYear("3rd Year").get();
-                Student s1 = new Student();
-                s1.setName("John Doe");
-                s1.setRollNumber("12345");
-                s1.setSection("A");
-                s1.setClassroom(c3);
-                studentRepository.save(s1);
 
-                Student s2 = new Student();
-                s2.setName("Jane Smith");
-                s2.setRollNumber("12346");
-                s2.setSection("B");
-                s2.setClassroom(c3);
-                studentRepository.save(s2);
-            }
 
             
         }
